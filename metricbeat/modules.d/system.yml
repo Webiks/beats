@@ -11,7 +11,6 @@
     - process
     - process_summary
     - socket_summary
-    - domain
     #- software
     #- hardware
     #- users
@@ -44,6 +43,7 @@
     - software
     - hardware
     - users
+    - domain
 #- module: system
 #  period: 5m
 #  metricsets:
