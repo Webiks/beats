@@ -1,0 +1,10 @@
+- name: software
+  type: group
+  release: beta
+  description: >
+    software
+  fields:
+    - name: example
+      type: keyword
+      description: >
+        Example field
