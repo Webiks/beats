@@ -31432,6 +31432,23 @@ format: bytes
 --
 
 [float]
+=== hardware
+
+hardware
+
+
+
+*`system.hardware.example`*::
++
+--
+Example field
+
+
+type: keyword
+
+--
+
+[float]
 === load
 
 CPU load averages.
@@ -33611,6 +33628,23 @@ type: integer
 --
 
 [float]
+=== software
+
+software
+
+
+
+*`system.software.example`*::
++
+--
+Example field
+
+
+type: keyword
+
+--
+
+[float]
 === uptime
 
 `uptime` contains the operating system uptime metric.
@@ -33626,6 +33660,23 @@ The OS uptime in milliseconds.
 type: long
 
 format: duration
+
+--
+
+[float]
+=== users
+
+users
+
+
+
+*`system.users.example`*::
++
+--
+Example field
+
+
+type: keyword
 
 --
 

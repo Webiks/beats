@@ -252,6 +252,8 @@ The following metricsets are available:
 
 * <<metricbeat-metricset-system-fsstat,fsstat>>
 
+* <<metricbeat-metricset-system-hardware,hardware>>
+
 * <<metricbeat-metricset-system-load,load>>
 
 * <<metricbeat-metricset-system-memory,memory>>
@@ -272,7 +274,11 @@ The following metricsets are available:
 
 * <<metricbeat-metricset-system-socket_summary,socket_summary>>
 
+* <<metricbeat-metricset-system-software,software>>
+
 * <<metricbeat-metricset-system-uptime,uptime>>
+
+* <<metricbeat-metricset-system-users,users>>
 
 include::system/core.asciidoc[]
 
@@ -285,6 +291,8 @@ include::system/entropy.asciidoc[]
 include::system/filesystem.asciidoc[]
 
 include::system/fsstat.asciidoc[]
+
+include::system/hardware.asciidoc[]
 
 include::system/load.asciidoc[]
 
@@ -306,5 +314,9 @@ include::system/socket.asciidoc[]
 
 include::system/socket_summary.asciidoc[]
 
+include::system/software.asciidoc[]
+
 include::system/uptime.asciidoc[]
+
+include::system/users.asciidoc[]
 
