@@ -69,7 +69,7 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 	var cfg util.ConfigYaml
 	util.ReadFile(&cfg)
 
-	hardwareQuery, hardwareMonitorQuery := getHardwareQueries(cfg)
+	hardwareQuery, hardwareMonitorQuery := getHardwareQueries(&cfg)
 
 	metricSetFields := common.MapStr{}
 	for _, hard := range hardwareQuery {
@@ -124,7 +124,7 @@ func sendEventHardware(hard queryKey, hardware []queryKey, rootFields common.Map
 	}
 }
 
-func getHardwareQueries(cfg util.ConfigYaml) ([]queryKey, []queryKey) {
+func getHardwareQueries(cfg *util.ConfigYaml) ([]queryKey, []queryKey) {
 	var hardwareQuery = []queryKey{}
 	var hardwareMonitorQuery = []queryKey{}
 

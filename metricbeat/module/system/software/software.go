@@ -46,6 +46,7 @@ type MetricSet struct {
 	mb.BaseMetricSet
 	softwares []Software
 	software  common.MapStr
+	config    Config
 }
 
 // New creates a new instance of the MetricSet. New is responsible for unpacking
@@ -66,18 +67,18 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	return &MetricSet{
 		BaseMetricSet: base,
 		software:      common.MapStr{},
+		config:        cfg,
 	}, nil
 }
 
 // Fetch methods implements the data gathering and data conversion to the  right
 // format. It publishes the event which is then forwarded to the output. I n case
 // of an error set the Error field of mb.Event or simply call report.Error ().
-func (m *MetricSet) Fetch(report mb.ReporterV2, cfg *Config) error {
-
+func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 	// get info from registery
 	var data = readAllSoftwareRegistry()
 	// filter data by query
-	var filteredData = filterSoftwareByConfig(data, cfg.Software)
+	var filteredData = filterSoftwareByConfig(data, m.config.Software)
 
 	for _, soft := range filteredData {
 		rootFields := common.MapStr{
