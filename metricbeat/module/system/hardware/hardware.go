@@ -29,6 +29,7 @@ type MetricSet struct {
 	formatQuery          util.ConfigYaml
 	hardware             common.MapStr
 	hardwareMonitorQuery []queryKey
+	config               util.ConfigYaml
 }
 
 type queryKey struct {
@@ -53,12 +54,15 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	}
 	var newQuery = []queryKey{}
 	var monitorQuery = []queryKey{}
+	var cfg util.ConfigYaml
+	util.ReadFile(&cfg)
 
 	return &MetricSet{
 		BaseMetricSet:        base,
 		hardwareQuery:        newQuery,
 		hardwareMonitorQuery: monitorQuery,
 		hardware:             common.MapStr{},
+		config:               cfg,
 	}, nil
 }
 
@@ -66,32 +70,11 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 // format. It publishes the event which is then forwarded to the output. In case
 // of an error set the Error field of mb.Event or simply call report.Error().
 func (m *MetricSet) Fetch(report mb.ReporterV2) error {
-	var cfg util.ConfigYaml
-	util.ReadFile(&cfg)
 
-	hardwareQuery, hardwareMonitorQuery := getHardwareQueries(&cfg)
-
+	hardwareQuery, hardwareMonitorQuery := getHardwareQueries(m.config)
 	metricSetFields := common.MapStr{}
-	for _, hard := range hardwareQuery {
-		rootFields := common.MapStr{
-			"type":         hard.Type,
-			"name":         hard.Name,
-			"description":  hard.Description,
-			"manufacturer": hard.Manufacturer,
-			"deviceID":     hard.DeviceID,
-			"index":        hard.Index,
-		}
-		sendEventHardware(hard, hardwareQuery, rootFields, metricSetFields, report)
-	}
-	for _, hard := range hardwareMonitorQuery {
-		rootFields := common.MapStr{
-			"type":             hard.Type,
-			"name":             util.B2s(hard.UserFriendlyName),
-			"manufacturerYear": hard.YearOfManufacture,
-			"index":            hard.Index,
-		}
-		sendEventHardware(hard, hardwareMonitorQuery, rootFields, metricSetFields, report)
-	}
+	buildAndSendHardwareQueryEvent(hardwareQuery, report, metricSetFields, false)
+	buildAndSendHardwareQueryEvent(hardwareMonitorQuery, report, metricSetFields, true)
 
 	if len(metricSetFields) > 0 {
 		var event mb.Event
@@ -124,7 +107,7 @@ func sendEventHardware(hard queryKey, hardware []queryKey, rootFields common.Map
 	}
 }
 
-func getHardwareQueries(cfg *util.ConfigYaml) ([]queryKey, []queryKey) {
+func getHardwareQueries(cfg util.ConfigYaml) ([]queryKey, []queryKey) {
 	var hardwareQuery = []queryKey{}
 	var hardwareMonitorQuery = []queryKey{}
 
@@ -149,4 +132,30 @@ func getHardwareQueries(cfg *util.ConfigYaml) ([]queryKey, []queryKey) {
 	}
 
 	return hardwareQuery, hardwareMonitorQuery
+}
+
+func buildAndSendHardwareQueryEvent(Query []queryKey, report mb.ReporterV2, metricSetFields common.MapStr, isMonitor bool) {
+	if isMonitor {
+		for _, hard := range Query {
+			rootFields := common.MapStr{
+				"type":             hard.Type,
+				"name":             util.B2s(hard.UserFriendlyName),
+				"manufacturerYear": hard.YearOfManufacture,
+				"index":            hard.Index,
+			}
+			sendEventHardware(hard, Query, rootFields, metricSetFields, report)
+		}
+	} else {
+		for _, hard := range Query {
+			rootFields := common.MapStr{
+				"type":         hard.Type,
+				"name":         hard.Name,
+				"description":  hard.Description,
+				"manufacturer": hard.Manufacturer,
+				"deviceID":     hard.DeviceID,
+				"index":        hard.Index,
+			}
+			sendEventHardware(hard, Query, rootFields, metricSetFields, report)
+		}
+	}
 }
