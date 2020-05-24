@@ -47,7 +47,7 @@ type queryKey struct {
 // New creates a new instance of the MetricSet. New is responsible for unpacking
 // any MetricSet specific configuration options if there are any.
 func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
-	cfgwarn.Beta("The system software metricset by Webiks is beta")
+	cfgwarn.Beta("The system hardware metricset by Webiks is beta v0.0.8 - 2020-05-24")
 	config := struct{}{}
 	if err := base.Module().UnpackConfig(&config); err != nil {
 		return nil, err

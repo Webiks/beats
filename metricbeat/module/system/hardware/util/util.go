@@ -30,7 +30,6 @@ func ReadFile(cfg *ConfigYaml) {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	fmt.Println(exPath, "exec path")
 
 	filename, _ := filepath.Abs(exPath + `\hardware.yml`)
 	yamlFile, err := ioutil.ReadFile(filename)
