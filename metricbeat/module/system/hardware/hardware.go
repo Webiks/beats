@@ -46,7 +46,7 @@ type queryKey struct {
 // New creates a new instance of the MetricSet. New is responsible for unpacking
 // any MetricSet specific configuration options if there are any.
 func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
-	cfgwarn.Beta("The system hardware metricset is beta.")
+	cfgwarn.Beta("The system software metricset by Webiks is beta")
 	config := struct{}{}
 	if err := base.Module().UnpackConfig(&config); err != nil {
 		return nil, err
@@ -68,27 +68,11 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 	var cfg util.ConfigYaml
 	util.ReadFile(&cfg)
-	for _, value := range cfg.Query {
-		if value.TypeOf != "WmiMonitorID" {
-			var dst []queryKey
-			wmi.Query("Select * from "+value.TypeOf, &dst)
-			for i, v := range dst {
-				m.hardwareQuery = append(m.hardwareQuery, queryKey{Name: v.Name, Description: v.Description, DeviceID: v.DeviceID, Manufacturer: v.Manufacturer, Type: value.Name, Output: cfg.Format, Index: i + 1})
-			}
-		} else {
-			// Special ability to handle WmiMonitorID
-			var dst []queryKey
-			err := wmi.QueryNamespace("select * from "+value.TypeOf, &dst, "root\\WMI")
-			if err != nil {
-				log.Println(err)
-			}
-			for i, v := range dst {
-				m.hardwareMonitorQuery = append(m.hardwareMonitorQuery, queryKey{UserFriendlyName: v.UserFriendlyName, YearOfManufacture: v.YearOfManufacture, Type: value.Name, Output: cfg.Format, Index: i + 1})
-			}
-		}
-	}
+
+	hardwareQuery, hardwareMonitorQuery := getHardwareQueries(cfg)
+
 	metricSetFields := common.MapStr{}
-	for _, hard := range m.hardwareQuery {
+	for _, hard := range hardwareQuery {
 		rootFields := common.MapStr{
 			"type":         hard.Type,
 			"name":         hard.Name,
@@ -97,16 +81,16 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 			"deviceID":     hard.DeviceID,
 			"index":        hard.Index,
 		}
-		sendEventHardware(hard, m.hardwareQuery, rootFields, metricSetFields, report)
+		sendEventHardware(hard, hardwareQuery, rootFields, metricSetFields, report)
 	}
-	for _, hard := range m.hardwareMonitorQuery {
+	for _, hard := range hardwareMonitorQuery {
 		rootFields := common.MapStr{
 			"type":             hard.Type,
 			"name":             util.B2s(hard.UserFriendlyName),
 			"manufacturerYear": hard.YearOfManufacture,
 			"index":            hard.Index,
 		}
-		sendEventHardware(hard, m.hardwareMonitorQuery, rootFields, metricSetFields, report)
+		sendEventHardware(hard, hardwareMonitorQuery, rootFields, metricSetFields, report)
 	}
 
 	if len(metricSetFields) > 0 {
@@ -138,4 +122,31 @@ func sendEventHardware(hard queryKey, hardware []queryKey, rootFields common.Map
 			newMap[strconv.Itoa(hard.Index)] = rootFields
 		}
 	}
+}
+
+func getHardwareQueries(cfg util.ConfigYaml) ([]queryKey, []queryKey) {
+	var hardwareQuery = []queryKey{}
+	var hardwareMonitorQuery = []queryKey{}
+
+	for _, value := range cfg.Query {
+		if value.TypeOf != "WmiMonitorID" {
+			var dst []queryKey
+			wmi.Query("Select * from "+value.TypeOf, &dst)
+			for i, v := range dst {
+				hardwareQuery = append(hardwareQuery, queryKey{Name: v.Name, Description: v.Description, DeviceID: v.DeviceID, Manufacturer: v.Manufacturer, Type: value.Name, Output: cfg.Format, Index: i + 1})
+			}
+		} else {
+			// Special ability to handle WmiMonitorID
+			var dst []queryKey
+			err := wmi.QueryNamespace("select * from "+value.TypeOf, &dst, "root\\WMI")
+			if err != nil {
+				log.Println(err)
+			}
+			for i, v := range dst {
+				hardwareMonitorQuery = append(hardwareMonitorQuery, queryKey{UserFriendlyName: v.UserFriendlyName, YearOfManufacture: v.YearOfManufacture, Type: value.Name, Output: cfg.Format, Index: i + 1})
+			}
+		}
+	}
+
+	return hardwareQuery, hardwareMonitorQuery
 }
