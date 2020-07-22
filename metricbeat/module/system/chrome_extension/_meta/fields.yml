@@ -1,0 +1,10 @@
+- name: chrome_extension
+  type: group
+  release: beta
+  description: >
+    chrome_extension
+  fields:
+    - name: example
+      type: keyword
+      description: >
+        Example field

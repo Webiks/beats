@@ -240,6 +240,8 @@ metricbeat.modules:
 
 The following metricsets are available:
 
+* <<metricbeat-metricset-system-chrome_extension,chrome_extension>>
+
 * <<metricbeat-metricset-system-core,core>>
 
 * <<metricbeat-metricset-system-cpu,cpu>>
@@ -279,6 +281,8 @@ The following metricsets are available:
 * <<metricbeat-metricset-system-uptime,uptime>>
 
 * <<metricbeat-metricset-system-users,users>>
+
+include::system/chrome_extension.asciidoc[]
 
 include::system/core.asciidoc[]
 

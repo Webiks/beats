@@ -129,6 +129,7 @@ import (
 	_ "github.com/elastic/beats/metricbeat/module/redis/key"
 	_ "github.com/elastic/beats/metricbeat/module/redis/keyspace"
 	_ "github.com/elastic/beats/metricbeat/module/system"
+	_ "github.com/elastic/beats/metricbeat/module/system/chrome_extension"
 	_ "github.com/elastic/beats/metricbeat/module/system/core"
 	_ "github.com/elastic/beats/metricbeat/module/system/cpu"
 	_ "github.com/elastic/beats/metricbeat/module/system/diskio"

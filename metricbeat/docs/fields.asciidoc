@@ -30476,6 +30476,23 @@ System status metrics, like CPU and memory usage, that are collected from the op
 
 
 [float]
+=== chrome_extension
+
+chrome_extension
+
+
+
+*`system.chrome_extension.example`*::
++
+--
+Example field
+
+
+type: keyword
+
+--
+
+[float]
 === core
 
 `system-core` contains CPU metrics for a single core of a multi-core system.
