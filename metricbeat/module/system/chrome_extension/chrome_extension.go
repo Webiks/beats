@@ -30,18 +30,24 @@ func init() {
 // mb.BaseMetricSet because it implements all of the required mb.MetricSet
 // interface methods except for Fetch.
 
+type ChromeExtensionConfig struct {
+	Port      string `yaml:"port"`
+	ShowInMin bool   `yaml:"showInMin"`
+}
+
 type Config struct {
-	Port string `yaml:"port"`
+	Settings ChromeExtensionConfig `yaml:"chrome_extension_metricset_settings"`
 }
 
 type URLData struct {
-	Domain string `json:"domain"`
-	Time   int    `json:"time"`
+	Domain string  `json:"domain"`
+	Time   float32 `json:"time"`
 }
 
 type MetricSet struct {
 	mb.BaseMetricSet
-	data common.MapStr
+	data   common.MapStr
+	config Config
 }
 
 var allData = make([]URLData, 0)
@@ -75,7 +81,7 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 
 	// running the server
 	srv := &http.Server{
-		Addr: "0.0.0.0:" + cfg.Port,
+		Addr: "0.0.0.0:" + cfg.Settings.Port,
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
@@ -92,6 +98,7 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	return &MetricSet{
 		BaseMetricSet: base,
 		data:          common.MapStr{},
+		config:        cfg,
 	}, nil
 
 }
@@ -104,7 +111,9 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 		rootFields := common.MapStr{
 			"domain":    domain.Domain,
 			"timeInSec": domain.Time,
-			"timeInMin": domain.Time / 60,
+		}
+		if m.config.Settings.ShowInMin {
+			rootFields["timeInMin"] = domain.Time / 60
 		}
 		report.Event(mb.Event{
 			MetricSetFields: common.MapStr{
@@ -123,7 +132,7 @@ func readFile(cfg *Config) {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	filename, _ := filepath.Abs(exPath + `\chrome_extension.yml`)
+	filename, _ := filepath.Abs(exPath + `\metricbeat.yml`)
 	yamlFile, err := ioutil.ReadFile(filename)
 
 	if err != nil {
