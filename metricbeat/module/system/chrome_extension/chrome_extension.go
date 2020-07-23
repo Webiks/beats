@@ -62,6 +62,9 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 		return nil, err
 	}
 
+	// creating channel for data
+	allDataChan := make(chan URLData)
+
 	// read config
 	var cfg Config
 	readFile(&cfg)
@@ -72,7 +75,7 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	r.HandleFunc("/ok", testIsServerOk).Methods("GET")
 
 	r.HandleFunc("/data", func(w http.ResponseWriter, r *http.Request) {
-		sendURLData(w, r, &allData)
+		sendURLData(w, r, allDataChan)
 	}).Methods("POST")
 
 	r.HandleFunc("/data", func(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +96,13 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 		if err := srv.ListenAndServe(); err != nil {
 			log.Println(err)
 		}
+	}()
+	//  go routine for accepting data in channel and push it to allData
+	go func() {
+		for item := range allDataChan {
+			allData = append(allData, item)
+		}
+
 	}()
 
 	return &MetricSet{
@@ -153,13 +163,13 @@ func testIsServerOk(w http.ResponseWriter, r *http.Request) {
 }
 
 // Post UrlData Route
-func sendURLData(w http.ResponseWriter, r *http.Request, allData *[]URLData) {
+func sendURLData(w http.ResponseWriter, r *http.Request, allDataChan chan URLData) {
 	w.Header().Set("Content-Type", "application/json")
 	var data []URLData
 	_ = json.NewDecoder(r.Body).Decode(&data)
 
 	for _, item := range data {
-		*allData = append(*allData, item)
+		allDataChan <- item
 	}
 
 	json.NewEncoder(w).Encode(data)
