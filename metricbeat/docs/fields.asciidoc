@@ -31543,6 +31543,23 @@ type: long
 --
 
 [float]
+=== manictime
+
+manictime
+
+
+
+*`system.manictime.example`*::
++
+--
+Example field
+
+
+type: keyword
+
+--
+
+[float]
 === memory
 
 `memory` contains local memory stats.

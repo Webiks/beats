@@ -190,7 +190,7 @@ This file is generated! See scripts/mage/docs_collector.go
 |<<metricbeat-module-statsd,Statsd>>  beta[]   |image:./images/icon-no.png[No prebuilt dashboards]    |  
 .1+| .1+|  |<<metricbeat-metricset-statsd-server,server>> beta[]  
 |<<metricbeat-module-system,System>>     |image:./images/icon-yes.png[Prebuilt dashboards are available]    |  
-.21+| .21+|  |<<metricbeat-metricset-system-chrome_extension,chrome_extension>> beta[]  
+.22+| .22+|  |<<metricbeat-metricset-system-chrome_extension,chrome_extension>> beta[]  
 |<<metricbeat-metricset-system-core,core>>   
 |<<metricbeat-metricset-system-cpu,cpu>>   
 |<<metricbeat-metricset-system-diskio,diskio>>   
@@ -199,6 +199,7 @@ This file is generated! See scripts/mage/docs_collector.go
 |<<metricbeat-metricset-system-fsstat,fsstat>>   
 |<<metricbeat-metricset-system-hardware,hardware>> beta[]  
 |<<metricbeat-metricset-system-load,load>>   
+|<<metricbeat-metricset-system-manictime,manictime>> beta[]  
 |<<metricbeat-metricset-system-memory,memory>>   
 |<<metricbeat-metricset-system-network,network>>   
 |<<metricbeat-metricset-system-network_summary,network_summary>> beta[]  

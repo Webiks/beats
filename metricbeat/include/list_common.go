@@ -138,6 +138,7 @@ import (
 	_ "github.com/elastic/beats/metricbeat/module/system/fsstat"
 	_ "github.com/elastic/beats/metricbeat/module/system/hardware"
 	_ "github.com/elastic/beats/metricbeat/module/system/load"
+	_ "github.com/elastic/beats/metricbeat/module/system/manictime"
 	_ "github.com/elastic/beats/metricbeat/module/system/memory"
 	_ "github.com/elastic/beats/metricbeat/module/system/network"
 	_ "github.com/elastic/beats/metricbeat/module/system/network_summary"
