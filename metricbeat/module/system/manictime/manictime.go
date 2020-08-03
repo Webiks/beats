@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/elastic/beats/libbeat/common"
@@ -60,7 +61,7 @@ type ValidActivity struct {
 	appName   string
 	siteKey   string
 	siteName  string
-	_id       string
+	id        string
 }
 
 // New creates a new instance of the MetricSet. New is responsible for unpacking
@@ -99,11 +100,9 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 	lastSync := getLastSyncTime(m.database)
 	// parse string(date) to time
 	parsedLastSync, _ := time.Parse(time.RFC3339, lastSync)
-	fmt.Println("parsed lastsync", parsedLastSync)
 
 	// get all data
 	newData := getManicTimeNewData(m.database, parsedLastSync)
-	fmt.Println("newData after func call", newData)
 
 	for _, activity := range newData {
 		rootFields := common.MapStr{
@@ -116,12 +115,10 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 			"siteKey":   activity.siteKey,
 			"siteName":  activity.siteName,
 		}
-
 		report.Event(mb.Event{
 			MetricSetFields: common.MapStr{
 				"data": rootFields,
 			},
-			ID: activity._id,
 		})
 	}
 
@@ -174,7 +171,6 @@ func getLastSyncTime(database *sql.DB) string {
 		if getLastSyncErr != nil {
 			fmt.Println(getLastSyncErr)
 		}
-		fmt.Println("lastSync Time:", lastSync)
 	}
 
 	return lastSync
@@ -201,11 +197,14 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 			fmt.Println("error scanning rows in manictime metricset", err)
 		}
 
+		if p.title == "Active" {
+			continue
+		}
 		parsedEndTime, _ := time.Parse(time.RFC3339, p.endTime)
 		if parsedEndTime.After(lastTimeSync) {
 			newActivity := ValidActivity{}
 			newActivity.title = p.title
-			newActivity.startTime = p.startTime
+			newActivity.startTime = getMaxStartTime(p.startTime, lastTimeSync)
 			newActivity.endTime = p.endTime
 			if p.url.Valid {
 				newActivity.url = p.url.String
@@ -232,8 +231,10 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 			} else {
 				newActivity.siteName = ""
 			}
-			hostname, _ := os.Hostname()
-			newActivity._id = p.title + "_" + p.startTime + "_" + hostname
+
+			// hostname, _ := os.Hostname()
+			id := newActivity.appName + "_" + newActivity.startTime
+			newActivity.id = strings.ReplaceAll(id, " ", "_")
 			newData = append(newData, newActivity)
 		}
 	}
@@ -244,4 +245,12 @@ func updateLastSync(database *sql.DB) {
 	loc, _ := time.LoadLocation("UTC")
 	now := time.Now().In(loc)
 	database.Exec("UPDATE Sync SET lastSync = $1 WHERE id=1", now)
+}
+
+func getMaxStartTime(startTime string, lastTimeSync time.Time) string {
+	parsedStartTime, _ := time.Parse(time.RFC3339, startTime)
+	if lastTimeSync.After(parsedStartTime) {
+		return lastTimeSync.Format(time.RFC3339)
+	}
+	return parsedStartTime.Format(time.RFC3339)
 }
