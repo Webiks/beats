@@ -63,8 +63,6 @@ type ValidActivity struct {
 	_id       string
 }
 
-var lastSync string
-
 // New creates a new instance of the MetricSet. New is responsible for unpacking
 // any MetricSet specific configuration options if there are any.
 func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
@@ -84,8 +82,8 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 		fmt.Println("could not open db file of manicTime")
 	}
 
-	// get last updated time
-	lastSync = getLastSyncTime(database)
+	// // get last updated time
+	// lastSync = getLastSyncTime(database)
 
 	return &MetricSet{
 		BaseMetricSet: base,
@@ -98,6 +96,7 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 // of an error set the Error field of mb.Event or simply call report.Error().
 func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 
+	lastSync := getLastSyncTime(m.database)
 	// parse string(date) to time
 	parsedLastSync, _ := time.Parse(time.RFC3339, lastSync)
 	fmt.Println("parsed lastsync", parsedLastSync)
@@ -127,7 +126,7 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 	}
 
 	//     update lastsync (memory + table)
-	updateLastSync(m.database, &lastSync)
+	updateLastSync(m.database)
 
 	return nil
 }
@@ -241,9 +240,8 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 	return newData
 }
 
-func updateLastSync(database *sql.DB, lastSync *string) {
+func updateLastSync(database *sql.DB) {
 	loc, _ := time.LoadLocation("UTC")
 	now := time.Now().In(loc)
-	*lastSync = now.String()
 	database.Exec("UPDATE Sync SET lastSync = $1 WHERE id=1", now)
 }
