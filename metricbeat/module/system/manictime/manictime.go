@@ -42,26 +42,31 @@ type Config struct {
 }
 
 type Activity struct {
-	title     string
-	startTime string
-	endTime   string
-	url       sql.NullString
-	appKey    sql.NullString
-	appName   sql.NullString
-	siteKey   sql.NullString
-	siteName  sql.NullString
+	title       string
+	startTime   string
+	endTime     string
+	url         sql.NullString
+	appKey      sql.NullString
+	appName     sql.NullString
+	siteKey     sql.NullString
+	siteName    sql.NullString
+	durationMin float32
+	durationSec float32
 }
 
 type ValidActivity struct {
-	title     string
-	startTime string
-	endTime   string
-	url       string
-	appKey    string
-	appName   string
-	siteKey   string
-	siteName  string
-	id        string
+	title           string
+	startTime       string
+	endTime         string
+	url             string
+	appKey          string
+	appName         string
+	siteKey         string
+	siteName        string
+	id              string
+	durationMin     float32
+	durationSec     float32
+	applicationName string
 }
 
 // New creates a new instance of the MetricSet. New is responsible for unpacking
@@ -106,14 +111,17 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 
 	for _, activity := range newData {
 		rootFields := common.MapStr{
-			"title":     activity.title,
-			"startTime": activity.startTime,
-			"endTime":   activity.endTime,
-			"url":       activity.url,
-			"appKey":    activity.appKey,
-			"appName":   activity.appName,
-			"siteKey":   activity.siteKey,
-			"siteName":  activity.siteName,
+			"title":           activity.title,
+			"startTime":       activity.startTime,
+			"endTime":         activity.endTime,
+			"url":             activity.url,
+			"appKey":          activity.appKey,
+			"appName":         activity.appName,
+			"siteKey":         activity.siteKey,
+			"siteName":        activity.siteName,
+			"durationMin":     activity.durationMin,
+			"durationSec":     activity.durationSec,
+			"applicationName": activity.applicationName,
 		}
 		report.Event(mb.Event{
 			MetricSetFields: common.MapStr{
@@ -180,19 +188,21 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 
 	var newData []ValidActivity
 
-	rows, _ := database.Query(`SELECT a.Name as title, a.StartUtcTime as startTime, a.EndUtcTime as endTime, b.Name as url, c.Key as appKey, c.Name as appName, d.Key as siteKey, d.Name as siteName
-	FROM Ar_Activity as a
-	LEFT JOIN Ar_Activity as b
+	rows, _ := database.Query(`SELECT a.Name as title, a.StartUtcTime as startTime, a.EndUtcTime as endTime, b.Name as url, c.Key as appKey, c.Name as appName, d.Key as siteKey, d.Name as siteName, 
+	round((julianday(a.EndUtcTime) - julianday(a.StartUtcTime)) * 1440, 3) as durationMin,
+	round((julianday(a.EndUtcTime) - julianday(a.StartUtcTime)) * 86400, 3) as durationSec
+	FROM "Ar_Activity" as a
+	LEFT JOIN "Ar_Activity" as b
 	ON a.ActivityId = b.RelatedActivityId
-	LEFT JOIN Ar_CommonGroup as c
+	LEFT JOIN "Ar_CommonGroup" as c
 	ON a.CommonGroupId = c.CommonId
-	LEFT JOIN Ar_CommonGroup as d
+	LEFT JOIN "Ar_CommonGroup" as d
 	ON b.CommonGroupId = d.CommonId
 	WHERE a.RelatedActivityId is NULL`)
 
 	for rows.Next() {
 		p := Activity{}
-		err := rows.Scan(&p.title, &p.startTime, &p.endTime, &p.url, &p.appKey, &p.appName, &p.siteKey, &p.siteName)
+		err := rows.Scan(&p.title, &p.startTime, &p.endTime, &p.url, &p.appKey, &p.appName, &p.siteKey, &p.siteName, &p.durationMin, &p.durationSec)
 		if err != nil {
 			fmt.Println("error scanning rows in manictime metricset", err)
 		}
@@ -206,6 +216,8 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 			newActivity.title = p.title
 			newActivity.startTime = getMaxStartTime(p.startTime, lastTimeSync)
 			newActivity.endTime = p.endTime
+			newActivity.durationMin = p.durationMin
+			newActivity.durationSec = p.durationSec
 			if p.url.Valid {
 				newActivity.url = p.url.String
 			} else {
@@ -228,12 +240,13 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 			}
 			if p.siteName.Valid {
 				newActivity.siteName = p.siteName.String
+				newActivity.applicationName = p.siteName.String
 			} else {
 				newActivity.siteName = ""
+				newActivity.applicationName = newActivity.appName
 			}
-
-			// hostname, _ := os.Hostname()
-			id := newActivity.appName + "_" + newActivity.startTime
+			hostname, _ := os.Hostname()
+			id := newActivity.appName + "_" + newActivity.startTime + "_" + hostname
 			newActivity.id = strings.ReplaceAll(id, " ", "_")
 			newData = append(newData, newActivity)
 		}
