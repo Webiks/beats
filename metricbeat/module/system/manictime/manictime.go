@@ -50,8 +50,8 @@ type Activity struct {
 	appName     sql.NullString
 	siteKey     sql.NullString
 	siteName    sql.NullString
-	durationMin float32
-	durationSec float32
+	durationMin float64
+	durationSec float64
 }
 
 type ValidActivity struct {
@@ -64,8 +64,8 @@ type ValidActivity struct {
 	siteKey         string
 	siteName        string
 	id              string
-	durationMin     float32
-	durationSec     float32
+	durationMin     float64
+	durationSec     float64
 	applicationName string
 }
 
