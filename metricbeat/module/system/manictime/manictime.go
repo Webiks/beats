@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/StackExchange/wmi"
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/libbeat/common/cfgwarn"
 	"github.com/elastic/beats/metricbeat/mb"
@@ -37,6 +37,7 @@ type MetricSet struct {
 
 type ManicTimeConfig struct {
 	Path string `yaml:"path"`
+	User string `yaml:"user"`
 }
 
 type Config struct {
@@ -71,6 +72,10 @@ type ValidActivity struct {
 	applicationName string
 }
 
+type Win32_ComputerSystem struct {
+	UserName string
+}
+
 // New creates a new instance of the MetricSet. New is responsible for unpacking
 // any MetricSet specific configuration options if there are any.
 func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
@@ -89,19 +94,12 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	if err != nil {
 		fmt.Println("could not open db file of manicTime")
 	}
-
-	user, err := user.Current()
-	if err != nil {
-		fmt.Println("could not get user details", err)
-	}
-
-	// // get last updated time
-	// lastSync = getLastSyncTime(database)
-
+	// get current username
+	userName := getUserName(cfg)
 	return &MetricSet{
 		BaseMetricSet: base,
 		database:      database,
-		userName:      user.Username,
+		userName:      userName,
 	}, nil
 }
 
@@ -278,4 +276,21 @@ func getMaxStartTime(startTime string, lastTimeSync time.Time) string {
 		return lastTimeSync.Format(time.RFC3339)
 	}
 	return parsedStartTime.Format(time.RFC3339)
+}
+
+func getUserName(cfg Config) string {
+	var username string
+	var query []Win32_ComputerSystem
+
+	q := wmi.CreateQuery(&query, "")
+
+	wmi.Query(q, &query)
+
+	if query[0].UserName != "" {
+		username = query[0].UserName
+	} else {
+		username = cfg.Settings.User
+	}
+
+	return username
 }
