@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ func init() {
 type MetricSet struct {
 	mb.BaseMetricSet
 	database *sql.DB
+	userName string
 }
 
 type ManicTimeConfig struct {
@@ -88,12 +90,18 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 		fmt.Println("could not open db file of manicTime")
 	}
 
+	user, err := user.Current()
+	if err != nil {
+		fmt.Println("could not get user details", err)
+	}
+
 	// // get last updated time
 	// lastSync = getLastSyncTime(database)
 
 	return &MetricSet{
 		BaseMetricSet: base,
 		database:      database,
+		userName:      user.Username,
 	}, nil
 }
 
@@ -122,10 +130,14 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 			"durationMin":     activity.durationMin,
 			"durationSec":     activity.durationSec,
 			"applicationName": activity.applicationName,
+			"id":              activity.id,
 		}
 		report.Event(mb.Event{
 			MetricSetFields: common.MapStr{
 				"data": rootFields,
+			},
+			RootFields: common.MapStr{
+				"user.name": m.userName,
 			},
 		})
 	}
