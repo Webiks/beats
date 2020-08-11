@@ -135,7 +135,9 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 				"data": rootFields,
 			},
 			RootFields: common.MapStr{
-				"user.name": m.userName,
+				"user": common.MapStr{
+					"name": m.userName,
+				},
 			},
 		})
 	}
