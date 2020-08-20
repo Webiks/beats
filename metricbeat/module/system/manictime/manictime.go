@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,16 +46,14 @@ type Config struct {
 }
 
 type Activity struct {
-	title       string
-	startTime   string
-	endTime     string
-	url         sql.NullString
-	appKey      sql.NullString
-	appName     sql.NullString
-	siteKey     sql.NullString
-	siteName    sql.NullString
-	durationMin float64
-	durationSec float64
+	title     string
+	startTime string
+	endTime   string
+	url       sql.NullString
+	appKey    sql.NullString
+	appName   sql.NullString
+	siteKey   sql.NullString
+	siteName  sql.NullString
 }
 
 type ValidActivity struct {
@@ -135,7 +134,9 @@ func (m *MetricSet) Fetch(report mb.ReporterV2) error {
 				"data": rootFields,
 			},
 			RootFields: common.MapStr{
-				"user.name": m.userName,
+				"user": common.MapStr{
+					"name": m.userName,
+				},
 			},
 		})
 	}
@@ -198,9 +199,7 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 
 	var newData []ValidActivity
 
-	rows, _ := database.Query(`SELECT a.Name as title, a.StartUtcTime as startTime, a.EndUtcTime as endTime, b.Name as url, c.Key as appKey, c.Name as appName, d.Key as siteKey, d.Name as siteName, 
-	round((julianday(a.EndUtcTime) - julianday(a.StartUtcTime)) * 1440, 3) as durationMin,
-	round((julianday(a.EndUtcTime) - julianday(a.StartUtcTime)) * 86400, 3) as durationSec
+	rows, _ := database.Query(`SELECT a.Name as title, a.StartUtcTime as startTime, a.EndUtcTime as endTime, b.Name as url, c.Key as appKey, c.Name as appName, d.Key as siteKey, d.Name as siteName
 	FROM "Ar_Activity" as a
 	LEFT JOIN "Ar_Activity" as b
 	ON a.ActivityId = b.RelatedActivityId
@@ -212,7 +211,7 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 
 	for rows.Next() {
 		p := Activity{}
-		err := rows.Scan(&p.title, &p.startTime, &p.endTime, &p.url, &p.appKey, &p.appName, &p.siteKey, &p.siteName, &p.durationMin, &p.durationSec)
+		err := rows.Scan(&p.title, &p.startTime, &p.endTime, &p.url, &p.appKey, &p.appName, &p.siteKey, &p.siteName)
 		if err != nil {
 			fmt.Println("error scanning rows in manictime metricset", err)
 		}
@@ -226,8 +225,6 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 			newActivity.title = p.title
 			newActivity.startTime = getMaxStartTime(p.startTime, lastTimeSync)
 			newActivity.endTime = p.endTime
-			newActivity.durationMin = p.durationMin
-			newActivity.durationSec = p.durationSec
 			if p.url.Valid {
 				newActivity.url = p.url.String
 			} else {
@@ -255,6 +252,10 @@ func getManicTimeNewData(database *sql.DB, lastTimeSync time.Time) []ValidActivi
 				newActivity.siteName = ""
 				newActivity.applicationName = newActivity.appName
 			}
+			startTime, _ := time.Parse(time.RFC3339, newActivity.startTime)
+			endTime, _ := time.Parse(time.RFC3339, newActivity.endTime)
+			newActivity.durationMin = toFixed(endTime.Sub(startTime).Minutes(), 3)
+			newActivity.durationSec = endTime.Sub(startTime).Seconds()
 			hostname, _ := os.Hostname()
 			id := newActivity.appName + "_" + newActivity.startTime + "_" + hostname
 			newActivity.id = strings.ReplaceAll(id, " ", "_")
@@ -293,4 +294,13 @@ func getUserName(cfg Config) string {
 	}
 
 	return username
+}
+
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
 }
