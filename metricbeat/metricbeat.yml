@@ -7,6 +7,34 @@
 # You can find the full configuration reference here:
 # https://www.elastic.co/guide/en/beats/metricbeat/index.html
 
+#================================= Paths ======================================
+
+# The home path for the Metricbeat installation. This is the default base path
+# for all other path settings and for miscellaneous files that come with the
+# distribution (for example, the sample dashboards).
+# If not set by a CLI flag or in the configuration file, the default for the
+# home path is the location of the binary.
+#path.home: /metricbeat-7.4.1-linux-x86_64
+
+# The configuration path for the Metricbeat installation. This is the default
+# base path for configuration files, including the main YAML configuration file
+# and the Elasticsearch template file. If not set by a CLI flag or in the
+# configuration file, the default for the configuration path is the home path.
+#path.config: ${path.home}
+
+# The data path for the Metricbeat installation. This is the default base path
+# for all the files in which Metricbeat needs to store its data. If not set by a
+# CLI flag or in the configuration file, the default for the data path is a data
+# subdirectory inside the home path.
+#path.data: ${path.home}/data
+#path.data: ${path.home}/data
+
+# The logs path for a Metricbeat installation. This is the default location for
+# the Beat's log files. If not set by a CLI flag or in the configuration file,
+# the default for the logs path is a logs subdirectory inside the home path.
+#path.logs: ${path.home}/logs
+path.logs: ${path.home}/logs
+
 #==========================  Modules configuration ============================
 
 metricbeat.config.modules:
@@ -14,10 +42,10 @@ metricbeat.config.modules:
   path: ${path.config}/modules.d/*.yml
 
   # Set to true to enable config reloading
-  reload.enabled: false
+  reload.enabled: true
 
   # Period on which files under path should be checked for changes
-  #reload.period: 10s
+  reload.period: 60s
 
 #==================== Elasticsearch template setting ==========================
 
@@ -38,8 +66,12 @@ setup.template.settings:
 
 # Optional fields that you can specify to add additional information to the
 # output.
+fields_under_root: true
 #fields:
-#  env: staging
+#  city: ${city}
+#  neighborhood: ${neighborhood}
+#  branch: ${branch}
+#  title: ${title}
 
 
 #============================== Dashboards =====================================
@@ -88,23 +120,68 @@ setup.kibana:
 
 # Configure what output to use when sending the data collected by the beat.
 
+#------------------------------- File output -----------------------------------
+#output.file:
+  # Boolean flag to enable or disable the output module.
+  #enabled: true
+
+  # Configure JSON encoding
+  #codec.json:
+    # Pretty-print JSON event
+    #pretty: false
+
+    # Configure escaping HTML symbols in strings.
+    #escape_html: false
+
+  # Path to the directory where to save the generated files. The option is
+  # mandatory.
+  #path: ${path.home}/output
+
+  # Name of the generated files. The default is `metricbeat` and it generates
+  # files: `metricbeat`, `metricbeat.1`, `metricbeat.2`, etc.
+  #filename: metricbeat.out.json.log
+
+  # Maximum size in kilobytes of each file. When this size is reached, and on
+  # every Metricbeat restart, the files are rotated. The default value is 10240
+  # kB.
+  #rotate_every_kb: 10000
+
+  # Maximum number of files under path. When this number of files is reached,
+  # the oldest file is deleted and the rest are shifted from last to first. The
+  # default is 7 files.
+  #number_of_files: 9
+
+  # Permissions to use for file creation. The default is 0600.
+  #permissions: 0666
+
+#----------------------------- Console output ---------------------------------
+#output.console:
+  # Boolean flag to enable or disable the output module.
+  #enabled: true
+
+  # Configure JSON encoding
+  #codec.json:
+    # Pretty-print JSON event
+    #pretty: false
+
+    # Configure escaping HTML symbols in strings.
+    #escape_html: false
+  
 #-------------------------- Elasticsearch output ------------------------------
-output.elasticsearch:
+#output.elasticsearch:
   # Array of hosts to connect to.
-  hosts: ["localhost:9200"]
+  #hosts: ["localhost:9200"]
 
-  # Protocol - either `http` (default) or `https`.
+  # Optional protocol and basic auth credentials.
   #protocol: "https"
-
-  # Authentication credentials - either API key or username/password.
-  #api_key: "id:api_key"
   #username: "elastic"
   #password: "changeme"
 
 #----------------------------- Logstash output --------------------------------
-#output.logstash:
+output.logstash:
   # The Logstash hosts
-  #hosts: ["localhost:5044"]
+  # hosts: ["logstash01.westus2.cloudapp.azure.com:5044"]
+  hosts: ["localhost:5000"]
 
   # Optional SSL. By default is off.
   # List of root certificates for HTTPS server verifications
@@ -123,8 +200,6 @@ output.elasticsearch:
 processors:
   - add_host_metadata: ~
   - add_cloud_metadata: ~
-  - add_docker_metadata: ~
-  - add_kubernetes_metadata: ~
 
 #================================ Logging =====================================
 
@@ -163,3 +238,14 @@ processors:
 
 # This allows to enable 6.7 migration aliases
 #migration.6_to_7.enabled: true
+
+#chrome extension metricset settings
+chrome_extension_metricset_settings:
+ port: 8006
+ showInMin: true
+
+manictime_metricset_settings:
+ path: C:\Users\%USER%\AppData\Local\Finkit\ManicTime\ManicTimeReports.db
+ defaultUser: default
+ webKeys:
+  - chrome.exe;google chrome
